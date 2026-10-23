@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f4f7fb">
+    <title>Project Pulse</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="./" aria-label="Project Pulse home">
+        <span class="brand-mark" aria-hidden="true">P</span>
+        <span>Project Pulse</span>
+      </a>
+      <span class="header-note">Team overview</span>
+    </header>
+
+    <main class="page-shell">
+      <section class="intro" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow">MONA’S TEAM · PROJECT OVERVIEW</p>
+          <h1 id="page-title">Project Pulse</h1>
+          <p class="intro-copy">A clear view of what’s moving. See ownership, momentum, and the next thing to keep an eye on.</p>
+        </div>
+        <div class="overview-chip" aria-label="Live project overview">
+          <span class="pulse-dot" aria-hidden="true"></span>
+          <span>Team pulse</span>
+        </div>
+      </section>
+
+      <section class="projects-section" aria-labelledby="projects-heading">
+        <div class="section-heading">
+          <div>
+            <h2 id="projects-heading">Projects</h2>
+            <p id="project-count" class="section-caption">A snapshot of current team work</p>
+          </div>
+          <span class="section-label">CURRENT PORTFOLIO</span>
+        </div>
+
+        <div id="status-message" class="state-message state-loading" role="status" aria-live="polite">
+          <span class="loading-indicator" aria-hidden="true"></span>
+          <span>Loading project updates…</span>
+        </div>
+        <div id="dashboard" class="dashboard" aria-label="Project cards" hidden></div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>Project Pulse</span>
+      <span>Small updates, shared momentum.</span>
+    </footer>
+
+    <script>
+      const dashboard = document.querySelector("#dashboard");
+      const statusMessage = document.querySelector("#status-message");
+      const projectCount = document.querySelector("#project-count");
+
+      const requiredFields = ["name", "owner", "status", "recentActivity", "priority"];
+
+      function showState(message, stateClass) {
+        statusMessage.className = `state-message ${stateClass}`;
+        statusMessage.setAttribute("role", stateClass === "state-error" ? "alert" : "status");
+        statusMessage.setAttribute("aria-live", stateClass === "state-error" ? "assertive" : "polite");
+        statusMessage.textContent = message;
+        statusMessage.hidden = false;
+        dashboard.hidden = true;
+      }
+
+      function hasRequiredProjectFields(project) {
+        return project && typeof project === "object" &&
+          requiredFields.every((field) =>
+            typeof project[field] === "string" && project[field].trim().length > 0
+          ) &&
+          (project.summary === undefined || typeof project.summary === "string");
+      }
+
+      function treatmentClass(value, treatments) {
+        const normalized = value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-");
+        return treatments[normalized] || "tag-neutral";
+      }
+
+      function createDetail(label, value, className) {
+        const wrapper = document.createElement("div");
+        wrapper.className = className;
+
+        const heading = document.createElement("h3");
+        heading.className = "detail-label";
+        heading.textContent = label;
+
+        const content = document.createElement("p");
+        content.className = "detail-value";
+        content.textContent = value;
+
+        wrapper.append(heading, content);
+        return wrapper;
+      }
+
+      function createProjectCard(project) {
+        const card = document.createElement("article");
+        card.className = "project-card";
+
+        const topLine = document.createElement("div");
+        topLine.className = "card-topline";
+
+        const category = document.createElement("span");
+        category.className = "card-kicker";
+        category.textContent = "PROJECT";
+
+        const priority = document.createElement("span");
+        priority.className = `priority-badge ${treatmentClass(project.priority, {
+          high: "priority-high",
+          urgent: "priority-high",
+          medium: "priority-medium",
+          low: "priority-low"
+        })}`;
+        priority.textContent = `Priority · ${project.priority}`;
+        topLine.append(category, priority);
+
+        const name = document.createElement("h2");
+        name.className = "project-name";
+        name.textContent = project.name;
+
+        const summary = document.createElement("p");
+        summary.className = "project-summary";
+        summary.textContent = project.summary || "A focused effort moving the team’s work forward.";
+
+        const status = document.createElement("p");
+        status.className = "status-line";
+        const statusLabel = document.createElement("span");
+        statusLabel.className = "detail-label";
+        statusLabel.textContent = "Status";
+        const statusBadge = document.createElement("span");
+        statusBadge.className = `status-badge ${treatmentClass(project.status, {
+          active: "status-active",
+          "in-progress": "status-active",
+          planning: "status-planning",
+          blocked: "status-blocked",
+          complete: "status-complete",
+          completed: "status-complete",
+          "on-track": "status-active",
+          "at-risk": "status-blocked"
+        })}`;
+        statusBadge.textContent = project.status;
+        status.append(statusLabel, statusBadge);
+
+        const divider = document.createElement("div");
+        divider.className = "card-divider";
+        divider.setAttribute("aria-hidden", "true");
+
+        const details = document.createElement("div");
+        details.className = "card-details";
+        details.append(
+          createDetail("OWNER", project.owner, "owner-detail"),
+          createDetail("RECENT ACTIVITY", project.recentActivity, "activity-detail")
+        );
+
+        card.append(topLine, name, summary, status, divider, details);
+        return card;
+      }
+
+      async function loadProjects() {
+        try {
+          const response = await fetch("project-data.json", { cache: "no-store" });
+          if (!response.ok) {
+            throw new Error(`Project data request failed (${response.status}).`);
+          }
+
+          const data = await response.json();
+          if (!data || !Array.isArray(data.projects)) {
+            throw new Error("Project data must contain a projects array.");
+          }
+          if (data.projects.length === 0) {
+            showState("No projects to show yet. Add a project to project-data.json to get started.", "state-empty");
+            projectCount.textContent = "Your portfolio is ready for its first project";
+            return;
+          }
+          if (!data.projects.every(hasRequiredProjectFields)) {
+            throw new Error("One or more projects are missing a required text field.");
+          }
+
+          const cards = data.projects.map(createProjectCard);
+          dashboard.replaceChildren(...cards);
+          dashboard.hidden = false;
+          statusMessage.hidden = true;
+          projectCount.textContent = `${cards.length} ${cards.length === 1 ? "project" : "projects"} in the current portfolio`;
+        } catch (error) {
+          console.error("Unable to load Project Pulse data:", error);
+          showState(
+            "Project updates couldn’t be loaded. Check that project-data.json is valid and try refreshing.",
+            "state-error"
+          );
+        }
+      }
+
+      loadProjects();
+    </script>
+  </body>
+</html>

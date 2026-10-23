@@ -1,0 +1,36 @@
+{
+  "projects": [
+    {
+      "name": "Atlas Contributor Hub",
+      "owner": "Riley Chen",
+      "status": "In progress",
+      "recentActivity": "Reviewed the new contributor onboarding flow",
+      "priority": "High",
+      "summary": "Make it easier for new contributors to find the right place to start."
+    },
+    {
+      "name": "Northstar Insights",
+      "owner": "Jordan Patel",
+      "status": "On track",
+      "recentActivity": "Shared the first research findings with the team",
+      "priority": "Medium",
+      "summary": "Turn customer feedback into clear, useful product signals."
+    },
+    {
+      "name": "Community Launch Kit",
+      "owner": "Avery Brooks",
+      "status": "Planning",
+      "recentActivity": "Drafted a checklist for the upcoming community launch",
+      "priority": "Low",
+      "summary": "Give local teams a simple, repeatable way to launch together."
+    },
+    {
+      "name": "Signal Reliability",
+      "owner": "Sam Rivera",
+      "status": "At risk",
+      "recentActivity": "Flagged a dependency that needs a cross-team decision",
+      "priority": "High",
+      "summary": "Improve confidence in the alerts teams rely on every day."
+    }
+  ]
+}
